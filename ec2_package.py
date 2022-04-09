@@ -63,14 +63,15 @@ def get_spot_price(session, region, start=None, end=None):
         response = client.describe_spot_price_history(**describe_args)
         for obj in response['SpotPriceHistory']:
             az, it, os, price, timestamp = obj.values()
-            yield it, az, os, price, timestamp
+            yield it, az, os, float(price), timestamp
         if not response['NextToken']:
             break
         describe_args['NextToken'] = response['NextToken']
 
 
 def store_spot_price(params: tuple) -> str:
-    buffer, session, region, start, end = params
+    buffers, session, region, start, end = params
+    buffer = dict()
     for it, az, os, price, timestamp in get_spot_price(session, region, start, end):
         if it not in buffer:
             buffer[it] = {az: {os: {'price': price, 'timestamp': timestamp}}}
@@ -80,4 +81,5 @@ def store_spot_price(params: tuple) -> str:
             if os in buffer[it][az] and timestamp < buffer[it][az][os]['timestamp']:
                 continue
             buffer[it][az][os] = {'price': price, 'timestamp': timestamp}
+    buffers.append(buffer)
     return region
