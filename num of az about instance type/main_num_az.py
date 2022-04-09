@@ -19,7 +19,6 @@ session = boto3.session.Session(
     aws_secret_access_key=secret_key)
 
 regions = get_regions(session)
-# print(f'region list: {regions}')
 print(f'total {len(regions)} regions')
 
 counter = Counter()
@@ -40,11 +39,5 @@ for key, cnt in counter.items():
 with open(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}.bin", 'wb') as file:
     pickle.dump(result, file)
 
-print('end process, the running time is', f'{time.time() - start}')
+print('end process, the running time is', f'{int(time.time() - start)}s')
 
-# from pprint import pprint
-#
-# with open('2022-03-23 16:59:30.bin', 'rb') as file:
-#     data = pickle.load(file)
-# pprint(data)
-# print(len(data))
