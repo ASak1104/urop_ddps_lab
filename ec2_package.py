@@ -1,5 +1,6 @@
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from decimal import Decimal
 
 
 def get_regions(session, region='us-east-1'):
@@ -63,7 +64,7 @@ def get_spot_price(session, region, start=None, end=None):
         response = client.describe_spot_price_history(**describe_args)
         for obj in response['SpotPriceHistory']:
             az, it, os, price, timestamp = obj.values()
-            yield it, az, os, float(price), timestamp
+            yield it, az, os, Decimal(price), timestamp
         if not response['NextToken']:
             break
         describe_args['NextToken'] = response['NextToken']
