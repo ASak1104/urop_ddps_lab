@@ -1,9 +1,9 @@
-from datetime import datetime
-from dateutil.relativedelta import relativedelta
+from boto3 import Session
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 
-def get_regions(session, region='us-east-1'):
+def get_regions(session: Session, region='us-east-1') -> list:
     client = session.client('ec2', region_name=region)
     describe_args = {
         'AllRegions': False
@@ -11,9 +11,11 @@ def get_regions(session, region='us-east-1'):
     return [region['RegionName'] for region in client.describe_regions(**describe_args)['Regions']]
 
 
-def get_instance_types(session, region):
+def get_instance_types(session: Session, region: str) -> list:
     client = session.client('ec2', region_name=region)
-    describe_args = {}
+    describe_args = {
+        'MaxResults': 300
+    }
     while True:
         describe_result = client.describe_instance_types(**describe_args)
         yield from [instance['InstanceType'] for instance in describe_result['InstanceTypes']]
@@ -22,7 +24,7 @@ def get_instance_types(session, region):
         describe_args['NextToken'] = describe_result['NextToken']
 
 
-def get_availability_zones(session, region):
+def get_availability_zones(session: Session, region: str) -> list:
     client = session.client('ec2', region_name=region)
     describe_args = {
         'AllAvailabilityZones': False
@@ -30,12 +32,11 @@ def get_availability_zones(session, region):
     return [az['ZoneName'] for az in client.describe_availability_zones(**describe_args)['AvailabilityZones']]
 
 
-def get_it_az(session, region):
+def get_it_az(session: Session, region: str) -> str:
     client = session.client('ec2', region_name=region)
     describe_args = {
         'LocationType': 'availability-zone',
     }
-
     while True:
         response = client.describe_instance_type_offerings(**describe_args)
         for obj in response['InstanceTypeOfferings']:
@@ -46,11 +47,11 @@ def get_it_az(session, region):
         describe_args['NextToken'] = response['NextToken']
 
 
-def get_spot_price(session, region, start=None, end=None):
+def get_spot_price(session: Session, region: str, start=None, end=None) -> tuple:
     if type(end) is not datetime:
-        end = datetime.now()
+        end = datetime.utcnow()
     if type(start) is not datetime:
-        start = end - relativedelta(months=1)
+        start = end - timedelta(hours=1)
     client = session.client('ec2', region)
     describe_args = {
         # 'AvailabilityZone': az,
