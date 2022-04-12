@@ -2,10 +2,11 @@ import os
 import time
 import boto3
 import pickle
-from ec2_package import *
 from multiprocessing import Manager
-from datetime import datetime, timedelta
 from pathos import multiprocessing as mp
+from datetime import datetime, timedelta
+from ec2_package import get_regions, store_spot_price
+from update_base import update_base
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -22,7 +23,7 @@ if __name__ == '__main__':
 
     regions = get_regions(session)
 
-    end_date = datetime.now().replace(second=0, microsecond=0)
+    end_date = datetime.utcnow().replace(microsecond=0)
     start_date = end_date - timedelta(minutes=10)
     result = dict()
 
@@ -30,7 +31,7 @@ if __name__ == '__main__':
     buffers = manager.list()
     args = [(buffers, session, region, start_date, end_date) for region in regions]
 
-    pool = mp.Pool(processes=min(len(regions), mp.cpu_count() * 3))
+    pool = mp.Pool(processes=min(len(regions), mp.cpu_count() * 2, 6))
     for region in pool.imap(store_spot_price, args):
         print(f'{region} end at {int(time.time() - start_time)}s')
     pool.close()
@@ -44,7 +45,17 @@ if __name__ == '__main__':
             else:
                 result[it] = buffer[it]
 
-    with open(f"{end_date}.bin", 'wb') as file:
+    path = './spot history'
+    try:
+        os.chdir(path)
+    except FileNotFoundError:
+        os.mkdir(path)
+        os.chdir(path)
+
+    with open(f'{end_date}.bin', 'wb') as file:
         pickle.dump(result, file)
+
+    base = update_base('base.bin')
+    # print(len(base))
 
     print('end process, the running time is', f'{int(time.time() - start_time)}s')
